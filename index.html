@@ -69,6 +69,9 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .acct:hover b{color:var(--accent)}
 .tgl{font-size:14px;color:var(--muted);padding:4px 6px}
 .tgl:hover{color:var(--text)}
+.install{display:none;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:5px 11px;white-space:nowrap}
+.install.on{display:inline-block}
+.install:hover{background:var(--accent);color:var(--on-accent)}
 
 /* ── layout ── */
 .wrap{max-width:1080px;margin:0 auto;padding:28px 20px 60px}
@@ -149,6 +152,7 @@ footer{border-top:1px solid var(--border);margin-top:22px}
       <span><b>FLARE</b>STAMINA</span>
     </a>
     <div class="search"><input id="q" type="search" placeholder="search tests…" aria-label="Search tests"></div>
+    <button class="install" id="installBtn" aria-label="Install as app">⤓ app</button>
     <a class="acct" id="acct" href="https://flarestamina.com/account/">account</a>
     <button class="tgl" id="tgl" aria-label="Toggle theme">◐</button>
   </div>
@@ -291,6 +295,27 @@ footer{border-top:1px solid var(--border);margin-top:22px}
   document.getElementById('q').addEventListener('input', function (e) {
     clearTimeout(deb);
     deb = setTimeout(function () { q = e.target.value; render(); }, 120);
+  });
+
+  /* app: offline shell + install prompt (one small chip, no nagging) */
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  }
+  var installEvt = null;
+  var standalone = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches;
+  window.addEventListener('beforeinstallprompt', function (e) {
+    if (standalone) return;
+    e.preventDefault();
+    installEvt = e;
+    document.getElementById('installBtn').classList.add('on');
+  });
+  document.getElementById('installBtn').addEventListener('click', function () {
+    if (!installEvt) return;
+    installEvt.prompt();
+    installEvt.userChoice.then(function () {
+      installEvt = null;
+      document.getElementById('installBtn').classList.remove('on');
+    });
   });
 
   fetch('tests.json', { cache: 'no-cache' })
